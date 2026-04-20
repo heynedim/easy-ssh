@@ -10,21 +10,22 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/SteamDeckHomebrew/decky-plugin-template.git"
+    "url": "git+https://github.com/heynedim/easy-ssh.git"
   },
   "keywords": [
     "decky",
     "plugin",
-    "plugin-template",
+    "development",
+    "easy-ssh",
     "steam-deck",
-    "deck"
+    "ssh"
   ],
-  "author": "You <you@you.tld>",
+  "author": "heynedim",
   "license": "BSD-3-Clause",
   "bugs": {
-    "url": "https://github.com/SteamDeckHomebrew/decky-plugin-template/issues"
+    "url": "https://github.com/heynedim/easy-ssh/issues"
   },
-  "homepage": "https://github.com/SteamDeckHomebrew/decky-plugin-template#readme",
+  "homepage": "https://github.com/heynedim/easy-ssh#readme",
   "devDependencies": {
     "@decky/rollup": "^1.0.2",
     "@decky/ui": "^4.11.3",
