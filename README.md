@@ -1,3 +1,5 @@
+![plugin preview](assets/publish_image.png)
+
 # Easy SSH
 
 Easy SSH is a Decky Loader plugin for the Steam Deck that allows users to quickly toggle the SSH service directly from the Quick Access Menu.
