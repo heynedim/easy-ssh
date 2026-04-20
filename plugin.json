@@ -1,11 +1,18 @@
 {
-  "name": "Example Plugin",
-  "author": "John Doe",
-  "flags": ["debug", "_root"],
+  "name": "Easy SSH",
+  "author": "heynedim",
+  "flags": [
+    "debug",
+    "_root"
+  ],
   "api_version": 1,
   "publish": {
-    "tags": ["template", "root"],
-    "description": "Decky example plugin.",
+    "tags": [
+      "system",
+      "root",
+      "ssh"
+    ],
+    "description": "Quickly toggle SSH.",
     "image": "https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"
   }
 }

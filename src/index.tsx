@@ -2,114 +2,128 @@ import {
   ButtonItem,
   PanelSection,
   PanelSectionRow,
-  Navigation,
-  staticClasses
+  ToggleField,
+  Field,
+  TextField,
+  staticClasses,
 } from "@decky/ui";
-import {
-  addEventListener,
-  removeEventListener,
-  callable,
-  definePlugin,
-  toaster,
-  // routerHook
-} from "@decky/api"
-import { useState } from "react";
-import { FaShip } from "react-icons/fa";
+import { callable, definePlugin, toaster } from "@decky/api";
+import { useState, useEffect } from "react";
+import { FaTerminal } from "react-icons/fa";
 
-// import logo from "../assets/logo.png";
-
-// This function calls the python function "add", which takes in two numbers and returns their sum (as a number)
-// Note the type annotations:
-//  the first one: [first: number, second: number] is for the arguments
-//  the second one: number is for the return value
-const add = callable<[first: number, second: number], number>("add");
-
-// This function calls the python function "start_timer", which takes in no arguments and returns nothing.
-// It starts a (python) timer which eventually emits the event 'timer_event'
-const startTimer = callable<[], void>("start_timer");
+const getSshStatus = callable<[], { active: boolean, enabled: boolean }>("get_ssh_status");
+const setSshEnabled = callable<[enabled: boolean, pwd: string], { active: boolean, enabled: boolean }>("set_ssh_enabled");
+const getIpAddress = callable<[], string>("get_ip_address");
+const getPluginLogs = callable<[], string[]>("get_plugin_logs");
+const clearPluginLogs = callable<[], string[]>("clear_plugin_logs");
 
 function Content() {
-  const [result, setResult] = useState<number | undefined>();
+  const [sshStatus, setSshStatus] = useState({ active: false, enabled: false });
+  const [ipAddress, setIpAddress] = useState("");
+  const [lastAction, setLastAction] = useState<string>("Ready");
+  const [backendLogs, setBackendLogs] = useState<string[]>([]);
+  const [useDefaultPassword, setUseDefaultPassword] = useState<boolean>(true);
 
-  const onClick = async () => {
-    const result = await add(Math.random(), Math.random());
-    setResult(result);
+  const updateStatus = async () => {
+    try {
+      const status = await getSshStatus();
+      setSshStatus(status);
+      const ip = await getIpAddress();
+      setIpAddress(ip);
+      const logs = await getPluginLogs();
+      setBackendLogs(logs || []);
+    } catch (err: any) {
+      console.error("Failed to update SSH status", err);
+      setLastAction(`Error checking status: ${err.toString?.() || "Unknown"}`);
+    }
+  };
+
+  useEffect(() => {
+    updateStatus();
+    const interval = setInterval(updateStatus, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleToggleSsh = async (enabled: boolean) => {
+    const activeSudoKey = useDefaultPassword ? "ssap" : "";
+
+    // Optimistic UI update to prevent bounce
+    setSshStatus({ active: enabled, enabled: enabled });
+    setLastAction(enabled ? "Starting SSH..." : "Stopping SSH...");
+
+    try {
+      const newStatus = await setSshEnabled(enabled, activeSudoKey);
+      setSshStatus(newStatus);
+
+      if (enabled && newStatus.active) {
+        setLastAction("SSH is currently Running");
+        toaster.toast({ title: "Easy SSH", body: "SSH Enabled Successfully" });
+      } else if (!enabled && !newStatus.active) {
+        setLastAction("SSH is currently Stopped");
+        toaster.toast({ title: "Easy SSH", body: "SSH Disabled Successfully" });
+      } else {
+        // The backend returned a status that doesn't match our request
+        throw new Error(`State mismatch: Expected ${enabled}, got ${newStatus.active}`);
+      }
+    } catch (err: any) {
+      console.error("Failed to set SSH enabled", err);
+      const errMsg = err.toString?.() || "Unknown error";
+      setLastAction(`Toggle Error: ${errMsg}`);
+      toaster.toast({ title: "SSH Error", body: errMsg });
+      updateStatus();
+    }
   };
 
   return (
-    <PanelSection title="Panel Section">
+    <PanelSection>
       <PanelSectionRow>
-        <ButtonItem
-          layout="below"
-          onClick={onClick}
-        >
-          {result ?? "Add two numbers via Python"}
-        </ButtonItem>
+        <ToggleField
+          label="Enable SSH"
+          description={sshStatus.active ? "Running" : "Stopped"}
+          checked={sshStatus.enabled}
+          onChange={handleToggleSsh}
+        />
       </PanelSectionRow>
       <PanelSectionRow>
-        <ButtonItem
-          layout="below"
-          onClick={() => startTimer()}
-        >
-          {"Start Python timer"}
+        <ToggleField
+          label="Use Default Password"
+          description={useDefaultPassword ? "Password is 'ssap'" : "Password is blank"}
+          checked={useDefaultPassword}
+          onChange={(checked) => setUseDefaultPassword(checked)}
+        />
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <Field label="Current IP Address" description={ipAddress || "Detecting..."} />
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <Field label="System Log" description={
+          <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+            <div style={{ opacity: 0.9 }}>{lastAction}</div>
+            {backendLogs.length > 0 && <div style={{ marginTop: "4px", fontSize: "12px", opacity: 0.6, borderTop: "1px solid #444", paddingTop: "4px" }}>
+              {backendLogs.map((lg, i) => <div key={i}>{lg}</div>)}
+            </div>}
+          </div>
+        } />
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <ButtonItem layout="below" onClick={async () => {
+          setLastAction("Cleared");
+          const clearedLogs = await clearPluginLogs();
+          setBackendLogs(clearedLogs || []);
+        }}>
+          Clear Log
         </ButtonItem>
       </PanelSectionRow>
-
-      {/* <PanelSectionRow>
-        <div style={{ display: "flex", justifyContent: "center" }}>
-          <img src={logo} />
-        </div>
-      </PanelSectionRow> */}
-
-      {/*<PanelSectionRow>
-        <ButtonItem
-          layout="below"
-          onClick={() => {
-            Navigation.Navigate("/decky-plugin-test");
-            Navigation.CloseSideMenus();
-          }}
-        >
-          Router
-        </ButtonItem>
-      </PanelSectionRow>*/}
     </PanelSection>
   );
-};
+}
 
 export default definePlugin(() => {
-  console.log("Template plugin initializing, this is called once on frontend startup")
-
-  // serverApi.routerHook.addRoute("/decky-plugin-test", DeckyPluginRouterTest, {
-  //   exact: true,
-  // });
-
-  // Add an event listener to the "timer_event" event from the backend
-  const listener = addEventListener<[
-    test1: string,
-    test2: boolean,
-    test3: number
-  ]>("timer_event", (test1, test2, test3) => {
-    console.log("Template got timer_event with:", test1, test2, test3)
-    toaster.toast({
-      title: "template got timer_event",
-      body: `${test1}, ${test2}, ${test3}`
-    });
-  });
-
   return {
-    // The name shown in various decky menus
-    name: "Test Plugin",
-    // The element displayed at the top of your plugin's menu
-    titleView: <div className={staticClasses.Title}>Decky Example Plugin</div>,
-    // The content of your plugin's menu
+    name: "Easy SSH",
+    titleView: <div className={staticClasses.Title}>Easy SSH</div>,
     content: <Content />,
-    // The icon displayed in the plugin list
-    icon: <FaShip />,
-    // The function triggered when your plugin unloads
-    onDismount() {
-      console.log("Unloading")
-      removeEventListener("timer_event", listener);
-      // serverApi.routerHook.removeRoute("/decky-plugin-test");
-    },
+    icon: <FaTerminal />,
+    onDismount() { },
   };
 });
