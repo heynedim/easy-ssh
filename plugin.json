@@ -2,7 +2,6 @@
   "name": "Easy SSH",
   "author": "heynedim",
   "flags": [
-    "debug",
     "_root"
   ],
   "api_version": 1,
@@ -13,6 +12,6 @@
       "ssh"
     ],
     "description": "Quickly toggle SSH.",
-    "image": "https://github.com/heynedim/easy-ssh/blob/main/assets/publish_image.png"
+    "image": "https://raw.githubusercontent.com/heynedim/easy-ssh/c3a468b652741019dbb4156899a8ebf216530387/assets/publish_image.png"
   }
 }

@@ -56,15 +56,15 @@ class Plugin:
             s.close()
         return IP
 
-    async def set_ssh_enabled(self, enabled: bool, pwd: str):
+    async def set_ssh_enabled(self, enabled: bool):
         try:
-            self.log_message("INFO", f"Attempting to {'enable' if enabled else 'disable'} SSH with sudo...")
+            self.log_message("INFO", f"Attempting to {'enable' if enabled else 'disable'} SSH...")
             
-            cmd = ['sudo', '-S', 'systemctl', 'enable', '--now', 'sshd'] if enabled else ['sudo', '-S', 'systemctl', 'disable', '--now', 'sshd']
-            result = self._run_command(cmd, input_text=pwd + "\n")
+            cmd = ['systemctl', 'enable', '--now', 'sshd'] if enabled else ['systemctl', 'disable', '--now', 'sshd']
+            result = self._run_command(cmd)
                 
             if result.returncode != 0:
-                error_msg = f"sudo exited with {result.returncode}: {result.stderr.strip()}"
+                error_msg = f"Command exited with {result.returncode}: {result.stderr.strip()}"
                 self.log_message("ERROR", error_msg)
                 raise Exception(error_msg)
                 
@@ -76,7 +76,7 @@ class Plugin:
 
     async def _main(self):
         self.loop = asyncio.get_event_loop()
-        self.log_message("INFO", "Easy SSH started!")
+        self.log_message("INFO", f"Easy SSH started (UID: {os.getuid()})")
 
     async def _unload(self):
         self.log_message("INFO", "Easy SSH unloaded!")

@@ -4,7 +4,6 @@ import {
   PanelSectionRow,
   ToggleField,
   Field,
-  TextField,
   staticClasses,
 } from "@decky/ui";
 import { callable, definePlugin, toaster } from "@decky/api";
@@ -12,7 +11,7 @@ import { useState, useEffect } from "react";
 import { FaTerminal } from "react-icons/fa";
 
 const getSshStatus = callable<[], { active: boolean, enabled: boolean }>("get_ssh_status");
-const setSshEnabled = callable<[enabled: boolean, pwd: string], { active: boolean, enabled: boolean }>("set_ssh_enabled");
+const setSshEnabled = callable<[enabled: boolean], { active: boolean, enabled: boolean }>("set_ssh_enabled");
 const getIpAddress = callable<[], string>("get_ip_address");
 const getPluginLogs = callable<[], string[]>("get_plugin_logs");
 const clearPluginLogs = callable<[], string[]>("clear_plugin_logs");
@@ -22,7 +21,7 @@ function Content() {
   const [ipAddress, setIpAddress] = useState("");
   const [lastAction, setLastAction] = useState<string>("Ready");
   const [backendLogs, setBackendLogs] = useState<string[]>([]);
-  const [useDefaultPassword, setUseDefaultPassword] = useState<boolean>(true);
+
 
   const updateStatus = async () => {
     try {
@@ -45,14 +44,12 @@ function Content() {
   }, []);
 
   const handleToggleSsh = async (enabled: boolean) => {
-    const activeSudoKey = useDefaultPassword ? "ssap" : "";
-
     // Optimistic UI update to prevent bounce
     setSshStatus({ active: enabled, enabled: enabled });
     setLastAction(enabled ? "Starting SSH..." : "Stopping SSH...");
 
     try {
-      const newStatus = await setSshEnabled(enabled, activeSudoKey);
+      const newStatus = await setSshEnabled(enabled);
       setSshStatus(newStatus);
 
       if (enabled && newStatus.active) {
@@ -84,14 +81,7 @@ function Content() {
           onChange={handleToggleSsh}
         />
       </PanelSectionRow>
-      <PanelSectionRow>
-        <ToggleField
-          label="Use Default Password"
-          description={useDefaultPassword ? "Password is 'ssap'" : "Password is blank"}
-          checked={useDefaultPassword}
-          onChange={(checked) => setUseDefaultPassword(checked)}
-        />
-      </PanelSectionRow>
+
       <PanelSectionRow>
         <Field label="Current IP Address" description={ipAddress || "Detecting..."} />
       </PanelSectionRow>
